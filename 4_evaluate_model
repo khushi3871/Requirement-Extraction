@@ -1,0 +1,29 @@
+import joblib
+import pandas as pd
+from sklearn.metrics import classification_report
+import warnings
+
+# Suppress warnings for labels with 0 precision
+warnings.filterwarnings('ignore')
+
+def evaluate():
+    # Load model and data
+    model = joblib.load("requirement_model.pkl")
+    vectorizer = joblib.load("tfidf_vectorizer.pkl")
+    data = pd.read_csv("clean_dataset.csv").sample(1000, random_state=42)
+    
+    X = vectorizer.transform(data['text'].astype(str))
+    y_true = data['summary']
+    y_pred = model.predict(X)
+    
+    # Get the report as a dictionary to extract only what we need
+    report = classification_report(y_true, y_pred, output_dict=True)
+    
+    print("\n--- Improved Model Evaluation ---")
+    print(f"Overall Accuracy: {report['accuracy']:.2f}")
+    print(f"Macro Avg (Balanced Performance): {report['macro avg']['f1-score']:.2f}")
+    print(f"Weighted Avg: {report['weighted avg']['f1-score']:.2f}")
+    print("----------------------------------\n")
+
+if __name__ == "__main__":
+    evaluate()
