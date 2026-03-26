@@ -86,54 +86,70 @@ export default function RequirementsPanel({ data, setView, projectId, userId }: 
    const backendKey = keyMap[uiTitle];
     return analysis_details[backendKey] || [];
   };
+
+  
   // --- Jira Sync Logic ---
+  // --- FIXED JIRA SYNC ---
   const handleJiraSync = async () => {
     const requirementsToSync = getList("Functional Requirements");
-    if (requirementsToSync.length === 0) return alert("No functional requirements found!");
+    
+    if (requirementsToSync.length === 0) {
+      alert("No functional requirements found to sync!");
+      return;
+    }
 
     setIsSyncing(true);
+    setSyncSuccess(false);
+
     try {
       const response = await fetch('http://127.0.0.1:5000/api/jira-sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           requirements: requirementsToSync,
-          projectKey: 'KAN' 
+          projectKey: 'KAN' // Ensure this key exists and you have access!
         }),
       });
+
+      const result = await response.json();
+
       if (response.ok) {
         setSyncSuccess(true);
-        setTimeout(() => setSyncSuccess(false), 5000);
+        setTimeout(() => setSyncSuccess(false), 4000);
+      } else {
+        // This will now catch the "Permission" error and tell you
+        console.error("Jira Sync Failed:", result);
+        alert(`Jira Error: ${result.error || "Permission Denied. Check your Jira Project Key and API Token."}`);
       }
     } catch (error) {
-      console.error("Jira Error:", error);
+      console.error("Network Error:", error);
+      alert("Could not reach the backend server.");
     } finally {
       setIsSyncing(false);
     }
   };
-
-  // --- MongoDB Save Logic ---
+  // --- FIXED MONGODB SAVE ---
   const handleSave = async () => {
-    setIsSaving(true);
+    setIsSaving(true); // START LOADING
     const finalProjectId = projectId || data.project_id || data.metadata?.project_id;
     const finalUserId = userId || data.userId || data.metadata?.userId;
-
-    const payload = { ...data, project_id: finalProjectId, userId: finalUserId };
 
     try {
       const response = await fetch('http://127.0.0.1:5000/api/save-analysis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...data, project_id: finalProjectId, userId: finalUserId }),
       });
-      if (response.ok) setIsSaved(true);
+
+      if (response.ok) {
+        setIsSaved(true); // THIS TRIGGERS THE BUTTON CHANGE
+      }
     } catch (error) {
       console.error("Save Error:", error);
     } finally {
-      setIsSaving(false);
+      setIsSaving(false); // STOP LOADING
     }
   };
-
   const downloadPDF = () => {
     const doc = new jsPDF();
     doc.setFillColor(71, 41, 224);
@@ -229,9 +245,29 @@ export default function RequirementsPanel({ data, setView, projectId, userId }: 
               <ArrowLeft className="w-4 h-4" /> New Analysis
             </button>
             <div className="flex gap-3">
-              <button onClick={handleJiraSync} className="px-5 py-2.5 rounded-lg border border-blue-500 text-blue-500 font-bold text-sm hover:bg-blue-500/10 transition-all">
-                {isSyncing ? "Syncing..." : syncSuccess ? "Synced!" : "Export to Jira"}
-              </button>
+              <button 
+  onClick={handleJiraSync} 
+  disabled={isSyncing || syncSuccess} // Prevents double-clicking while synced
+  className={`px-5 py-2.5 rounded-lg border font-bold text-sm transition-all flex items-center gap-2 ${
+    syncSuccess 
+      ? "border-emerald-500 text-emerald-500 bg-emerald-500/10" 
+      : "border-blue-500 text-blue-500 hover:bg-blue-500/10"
+  }`}
+>
+  {isSyncing ? (
+    <>
+      <Loader2 className="w-4 h-4 animate-spin" />
+      <span>Syncing...</span>
+    </>
+  ) : syncSuccess ? (
+    <>
+      <Check className="w-4 h-4" />
+      <span>Synced!</span>
+    </>
+  ) : (
+    "Sync to Jira"
+  )}
+</button>
               <button onClick={downloadPDF} className="px-5 py-2.5 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800 transition-all font-bold text-sm">Download Report</button>
               {!isSaved ? (
                 <button onClick={handleSave} className="px-6 py-2.5 rounded-lg bg-[#4729e0] text-white font-bold text-sm shadow-lg hover:bg-[#4729e0]/90">
