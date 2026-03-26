@@ -3,3 +3,5 @@ combined_dataset.csv
 
 *.pkl
 __pycache__/
+
+backend/.env
