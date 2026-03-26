@@ -68,7 +68,10 @@ router.post('/analyze-requirements', async (req, res) => {
   }
 
   try {
-    const mlResponse = await axios.post('http://localhost:8000/analyze', { text: text });
+    const mlResponse = await axios.post('http://localhost:8000/analyze', { text: text , 
+      project_id: projectId, // This is the missing piece!
+    source_type: "Manual"
+    });
     const mlData = mlResponse.data;
 
     const newRequirement = new Requirement({
@@ -77,6 +80,7 @@ router.post('/analyze-requirements', async (req, res) => {
       source: mlData.metadata?.source || 'Manual Input',
       predicted_category: mlData.predicted_category,
       analysis_details: {
+        // We take the "Space Names" from Python and save them into the "snake_case" Mongoose fields
         functional_requirements: mlData.analysis_details["Functional Requirements"] || [],
         non_functional_requirements: mlData.analysis_details["Non Functional Requirements"] || [],
         stakeholders: mlData.analysis_details["Stakeholders"] || [],
