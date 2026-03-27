@@ -8,8 +8,9 @@ const analyzeRoute = require('./routes/analyze');
 const app = express();
 
 // --- 1. Middleware ---
+// This allows any local port to talk to your server
 app.use(cors({
-    origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173'],
+    origin: true, 
     credentials: true
 }));
 app.use(express.json());

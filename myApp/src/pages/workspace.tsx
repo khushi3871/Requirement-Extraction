@@ -60,7 +60,7 @@ export default function Workspace() {
         // 2. Update global history so the PRD updates in real-time
         setAllHistory((prev) => [data, ...prev]);
 
-        setCurrentView("dashboard");
+       
       } else {
         alert("Extraction failed: Backend returned empty data.");
       }
@@ -92,7 +92,7 @@ export default function Workspace() {
           </div>
         )}
 
-        {(() => {
+       {(() => {
           switch (currentView) {
             case "history":
               return <HistoryPage onViewItem={handleViewHistoryItem} />;
@@ -107,7 +107,6 @@ export default function Workspace() {
               );
 
             case "prd":
-              // This now renders a MASTER PRD containing every prompt uploaded so far
               return allHistory.length > 0 ? (
                 <PRDView allData={allHistory} />
               ) : (
@@ -135,7 +134,23 @@ export default function Workspace() {
 
             case "input":
             default:
-              return <InputPage onExtract={handleExtract} />;
+              return (
+                <div className="p-6 h-full overflow-y-auto custom-scrollbar">
+                  {!analysisData ? (
+                    <InputPage onExtract={handleExtract} />
+                  ) : (
+                    <div className="flex flex-col gap-4 max-w-6xl mx-auto">
+                      <button 
+                        onClick={() => setAnalysisData(null)} 
+                        className="w-fit px-4 py-2 bg-[#4729e0]/10 text-[#4729e0] border border-[#4729e0]/20 hover:bg-[#4729e0]/20 rounded-lg text-sm font-bold mb-4 transition-all"
+                      >
+                        ← Back to Input
+                      </button>
+                      <RequirementsPanel data={analysisData} />
+                    </div>
+                  )}
+                </div>
+              );
           }
         })()}
       </div>
