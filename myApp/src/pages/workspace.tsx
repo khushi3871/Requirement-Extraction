@@ -7,17 +7,37 @@ import RequirementsPanel from "../components/output";
 import HistoryPage from "./History";
 import PRDView from "../components/PRDview";
 import KnowledgeGraph from "../components/KnowledgeGraph";
+import AnalyticsDashboard from "../components/AnalyticsDashboard";
 
 export default function Workspace() {
   const [analysisData, setAnalysisData] = useState(null);
-  const [allHistory, setAllHistory] = useState([]); // Master array for all project extractions
+  const [allHistory, setAllHistory] = useState([]);
+  const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [currentView, setCurrentView] = useState("input");
+  const [currentView, setCurrentView] = useState("analytics");
 
   const { projectId } = useParams();
   const { userId } = useAuth();
 
-  // 1. Fetch all existing requirements for this project on load
+  // 1. Fetch User's Project Portfolio for the Dropdowns
+  useEffect(() => {
+    const fetchUserProjects = async () => {
+      try {
+        const response = await fetch(
+          `http://localhost:5000/api/projects/${userId}`,
+        );
+        const data = await response.json();
+        setProjects(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Portfolio fetch failed:", error);
+      }
+    };
+    if (userId) fetchUserProjects();
+  }, [userId]);
+
+  // 2. FIXED: Fetch history correctly
+  // We fetch history for the CURRENT project to keep things fast.
+  // The AnalyticsDashboard will now call its own optimized aggregation route.
   useEffect(() => {
     const fetchProjectHistory = async () => {
       try {
@@ -25,15 +45,14 @@ export default function Workspace() {
           `http://localhost:5000/api/history/${projectId}/${userId}`,
         );
         const data = await response.json();
-        // Ensure data is an array before setting
         setAllHistory(Array.isArray(data) ? data : []);
       } catch (error) {
-        console.error("Error fetching aggregated project data:", error);
+        console.error("Error fetching history:", error);
       }
     };
 
-    if (projectId) fetchProjectHistory();
-  }, [projectId]);
+    if (userId && projectId) fetchProjectHistory();
+  }, [userId, projectId]);
 
   const handleExtract = async (text, sourceType) => {
     setLoading(true);
@@ -56,16 +75,16 @@ export default function Workspace() {
 
       if (data && (data.analysis_details || data.requirements)) {
         setAnalysisData(data);
-
-        // 2. Update global history so the PRD updates in real-time
+        // Update history state so the dashboard reflects new data immediately
         setAllHistory((prev) => [data, ...prev]);
-
-       
+        setCurrentView("results");
       } else {
         alert("Extraction failed: Backend returned empty data.");
       }
     } catch (error) {
-      alert("Backend not responding. Ensure Node and Python APIs are running!");
+      alert(
+        "Backend error. check if your Python AI server is running on port 8000!",
+      );
     } finally {
       setLoading(false);
     }
@@ -73,7 +92,7 @@ export default function Workspace() {
 
   const handleViewHistoryItem = (itemData: any) => {
     setAnalysisData(itemData);
-    setCurrentView("dashboard");
+    setCurrentView("results");
   };
 
   return (
@@ -85,24 +104,39 @@ export default function Workspace() {
           <div className="absolute inset-0 z-50 bg-[#141121]/80 backdrop-blur-sm flex items-center justify-center">
             <div className="flex flex-col items-center">
               <div className="w-10 h-10 border-4 border-[#4729e0] border-t-transparent rounded-full animate-spin mb-2"></div>
-              <p className="text-[#4729e0] font-bold animate-pulse">
-                Processing Requirements...
+              <p className="text-[#4729e0] font-bold animate-pulse text-center">
+                AI Agent Extracting Intelligence...
+                <br />
+                <span className="text-xs font-normal text-slate-400 italic">
+                  Cleaning noise, structuring requirements
+                </span>
               </p>
             </div>
           </div>
         )}
 
-       {(() => {
+        {(() => {
           switch (currentView) {
+            case "analytics":
+              return <AnalyticsDashboard projectList={projects} />;
+
             case "history":
               return <HistoryPage onViewItem={handleViewHistoryItem} />;
 
-            case "dashboard":
+            case "results":
               return analysisData ? (
-                <RequirementsPanel data={analysisData} />
+                <div className="p-6 max-w-6xl mx-auto">
+                  <button
+                    onClick={() => setCurrentView("input")}
+                    className="px-4 py-2 bg-[#4729e0]/10 text-[#4729e0] border border-[#4729e0]/20 hover:bg-[#4729e0]/20 rounded-lg text-sm font-bold mb-6 transition-all"
+                  >
+                    ← Back to Input
+                  </button>
+                  <RequirementsPanel data={analysisData} />
+                </div>
               ) : (
-                <div className="flex-1 h-full flex items-center justify-center text-slate-500">
-                  Please extract requirements first.
+                <div className="flex-1 h-full flex items-center justify-center text-slate-500 italic">
+                  No active extraction. Go to Input Workspace to begin.
                 </div>
               );
 
@@ -111,7 +145,7 @@ export default function Workspace() {
                 <PRDView allData={allHistory} />
               ) : (
                 <div className="flex flex-col items-center justify-center p-20 text-slate-500">
-                  <p className="mb-4">No project data found yet.</p>
+                  <p className="mb-4">No data available for PRD generation.</p>
                   <button
                     onClick={() => setCurrentView("input")}
                     className="px-4 py-2 bg-[#4729e0] text-white rounded-lg font-bold"
@@ -128,7 +162,7 @@ export default function Workspace() {
                 </div>
               ) : (
                 <div className="flex items-center justify-center h-full text-slate-500">
-                  Please extract requirements first to view the Knowledge Map.
+                  Select an extraction from History to view the Knowledge Map.
                 </div>
               );
 
@@ -136,19 +170,7 @@ export default function Workspace() {
             default:
               return (
                 <div className="p-6 h-full overflow-y-auto custom-scrollbar">
-                  {!analysisData ? (
-                    <InputPage onExtract={handleExtract} />
-                  ) : (
-                    <div className="flex flex-col gap-4 max-w-6xl mx-auto">
-                      <button 
-                        onClick={() => setAnalysisData(null)} 
-                        className="w-fit px-4 py-2 bg-[#4729e0]/10 text-[#4729e0] border border-[#4729e0]/20 hover:bg-[#4729e0]/20 rounded-lg text-sm font-bold mb-4 transition-all"
-                      >
-                        ← Back to Input
-                      </button>
-                      <RequirementsPanel data={analysisData} />
-                    </div>
-                  )}
+                  <InputPage onExtract={handleExtract} />
                 </div>
               );
           }

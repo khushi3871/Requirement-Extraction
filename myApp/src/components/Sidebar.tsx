@@ -25,7 +25,6 @@ export default function Sidebar({ setView, currentView }: SidebarProps) {
     { id: "graph", icon: Network, label: "Knowledge Graph" },
     { id: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { id: "history", icon: Clock, label: "History" },
-
   ];
 
   const [isJiraLinked, setIsJiraLinked] = useState(false);
