@@ -104,9 +104,10 @@ app.post("/api/jira-sync", async (req, res) => {
           summary: cleanSummary,
           description: reqText,
           issuetype: { name: "Task" },
+          // Use accountId for precise assignment
+          assignee: { id: process.env.JIRA_ACCOUNT_ID },
         },
       };
-
       const response = await axios.post(
         `https://${domain}/rest/api/2/issue`,
         jiraIssue,

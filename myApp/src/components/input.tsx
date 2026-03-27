@@ -12,7 +12,8 @@ import {
   GitBranch,
   Filter,
   ListChecks,
-  FileText
+  FileText,
+  Loader2
 } from "lucide-react";
 
 const SourceTypeCard = ({
@@ -85,36 +86,47 @@ export default function InputPage({ onExtract }: { onExtract: (text: string, typ
   const [sourceType, setSourceType] = useState('email');
   const [activeTab, setActiveTab] = useState('paste');
   const [text, setText] = useState('');
+  const [isExtracting, setIsExtracting] = useState(false);
 
   // Handle Local File Reading
-const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-  const file = event.target.files?.[0];
-  if (!file) return;
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-  // 1. Validation
-  if (file.type !== "text/plain" && !file.name.endsWith(".txt")) {
-    alert("Please upload a .txt file for the requirements analysis.");
-    return;
-  }
+    if (file.type !== "text/plain" && !file.name.endsWith(".txt")) {
+      alert("Please upload a .txt file for the requirements analysis.");
+      return;
+    }
 
-  const reader = new FileReader();
-  
-  // 2. Define what happens when the file is read
-  reader.onload = (e) => {
-    const content = e.target?.result as string;
+    const reader = new FileReader();
     
-    // Update the local state just in case
-    setText(content); 
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      
+      // Update the local state
+      setText(content); 
 
-    // 3. IMMEDIATE EXTRACTION
-    // This sends the file content to your Node backend immediately
-    onExtract(content, 'document'); 
-    
-    console.log(`🚀 File "${file.name}" uploaded. Starting extraction...`);
+      // Switch to paste tab so user can see what was uploaded
+      setActiveTab('paste');
+      
+      console.log(`🚀 File "${file.name}" loaded into editor. Click Extract to save.`);
+    };
+
+    reader.readAsText(file);
   };
 
-  reader.readAsText(file);
-};
+  const handleManualExtract = async () => {
+    if (!text || isExtracting) return;
+    
+    setIsExtracting(true);
+    try {
+      await onExtract(text, sourceType);
+    } catch (error) {
+      console.error("Extraction failed:", error);
+    } finally {
+      setIsExtracting(false);
+    }
+  };
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#0c0a14] text-slate-100 font-sans">
@@ -131,7 +143,6 @@ const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         </header>
 
         <div className="p-8 max-w-5xl mx-auto w-full space-y-8">
-          {/* Step 1: Source Type */}
           <section>
             <div className="flex items-center gap-2 mb-4">
               <span className="w-6 h-6 flex items-center justify-center rounded-full bg-[#4729e0]/10 text-[#4729e0] text-xs font-bold">1</span>
@@ -145,7 +156,6 @@ const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
             </div>
           </section>
 
-          {/* Step 2: Input Content */}
           <section>
             <div className="flex items-center gap-2 mb-4">
               <span className="w-6 h-6 flex items-center justify-center rounded-full bg-[#4729e0]/10 text-[#4729e0] text-xs font-bold">2</span>
@@ -204,22 +214,21 @@ const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
             </div>
           </section>
 
-      {/* Action Button */}
           <div className="flex flex-col items-center justify-center py-4">
             <button 
-              onClick={() => onExtract(text, sourceType)}
-              // Add this disabled check
-              disabled={!text.trim()} 
-              className={`flex items-center gap-3 px-8 py-4 rounded-xl font-bold text-white shadow-xl transition-all group ${
-                !text.trim() 
-                  ? 'bg-slate-700 cursor-not-allowed opacity-50' 
-                  : 'bg-[#4729e0] shadow-[#4729e0]/20 hover:scale-[1.02] active:scale-[0.98]'
+              onClick={handleManualExtract}
+              disabled={isExtracting || !text}
+              className={`flex items-center gap-3 px-8 py-4 bg-[#4729e0] rounded-xl font-bold text-white shadow-xl shadow-[#4729e0]/20 transition-all group ${
+                (isExtracting || !text) ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.02] active:scale-[0.98]'
               }`}
             >
-              <Sparkles className="w-5 h-5 fill-current" />
-              {/* Optional: Change text if you want to show it's working */}
-              Extract Requirements
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              {isExtracting ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Sparkles className="w-5 h-5 fill-current" />
+              )}
+              {isExtracting ? 'Extracting...' : 'Extract Requirements'}
+              {!isExtracting && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
             </button>
             <p className="mt-4 text-xs text-slate-400 flex items-center gap-1">
               <Zap className="w-[14px] h-[14px]" />
@@ -227,7 +236,6 @@ const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
             </p>
           </div>
 
-          {/* Pipeline */}
           <section className="mt-12 pt-8 border-t border-[#4729e0]/10">
             <h4 className="text-center text-xs font-black uppercase tracking-widest text-slate-500 mb-8">
               Internal Extraction Pipeline

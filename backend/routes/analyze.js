@@ -198,8 +198,15 @@ router.post("/analyze-requirements", async (req, res) => {
       },
       raw_text: text,
     });
-    const savedData = await newRequirement.save();
-    res.status(200).json(savedData);
+
+    // const savedData = await newRequirement.save();
+
+    // Simple log to know it worked without the text dump
+    // console.log("🚀 AI Analysis complete and saved.");
+    console.log(
+      "🚀 AI Analysis complete (Returning to frontend for manual save).",
+    );
+    res.status(200).json(newRequirement);
   } catch (error) {
     res.status(500).json({ error: "AI Extraction Failed" });
   }
@@ -215,6 +222,33 @@ router.get("/history/:projectId/:userId", async (req, res) => {
     res.json(history);
   } catch (error) {
     res.status(500).json({ message: "Error fetching history" });
+  }
+});
+
+// DELETE a specific history item
+// --- DELETE A SPECIFIC HISTORY ITEM ---
+router.delete("/history/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Attempt to find and delete the document by its MongoDB _id
+    const deletedItem = await Requirement.findByIdAndDelete(id);
+
+    if (!deletedItem) {
+      console.log(`❌ Delete failed: Item ${id} not found.`);
+      return res
+        .status(404)
+        .json({ message: "Requirement not found in database." });
+    }
+
+    console.log(`🗑️ Successfully deleted history item: ${id}`);
+    res.status(200).json({ message: "Deleted successfully" });
+  } catch (error) {
+    console.error("❌ Backend Delete Error:", error.message);
+    res.status(500).json({
+      error: "Server failed to delete item",
+      details: error.message,
+    });
   }
 });
 

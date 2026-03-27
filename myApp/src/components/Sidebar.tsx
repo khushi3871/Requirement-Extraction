@@ -20,12 +20,11 @@ interface SidebarProps {
 
 export default function Sidebar({ setView, currentView }: SidebarProps) {
   const navItems = [
-    { id: "analytics", icon: LayoutDashboard, label: "Dashboard" },
     { id: "input", icon: ArrowRightToLine, label: "Input Workspace" },
-    { id: "history", icon: Clock, label: "History" },
     { id: "prd", icon: BookOpen, label: "BRD Generator" },
-    { id: "stakeholders", icon: Users, label: "Stakeholders" },
     { id: "graph", icon: Network, label: "Knowledge Graph" },
+    { id: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
+    { id: "history", icon: Clock, label: "History" },
   ];
 
   const [isJiraLinked, setIsJiraLinked] = useState(false);
