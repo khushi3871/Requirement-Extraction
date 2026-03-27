@@ -204,13 +204,20 @@ const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
             </div>
           </section>
 
-          {/* Action Button */}
+      {/* Action Button */}
           <div className="flex flex-col items-center justify-center py-4">
             <button 
               onClick={() => onExtract(text, sourceType)}
-              className="flex items-center gap-3 px-8 py-4 bg-[#4729e0] rounded-xl font-bold text-white shadow-xl shadow-[#4729e0]/20 hover:scale-[1.02] active:scale-[0.98] transition-all group"
+              // Add this disabled check
+              disabled={!text.trim()} 
+              className={`flex items-center gap-3 px-8 py-4 rounded-xl font-bold text-white shadow-xl transition-all group ${
+                !text.trim() 
+                  ? 'bg-slate-700 cursor-not-allowed opacity-50' 
+                  : 'bg-[#4729e0] shadow-[#4729e0]/20 hover:scale-[1.02] active:scale-[0.98]'
+              }`}
             >
               <Sparkles className="w-5 h-5 fill-current" />
+              {/* Optional: Change text if you want to show it's working */}
               Extract Requirements
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
