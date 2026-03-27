@@ -20,7 +20,7 @@ interface SidebarProps {
 
 export default function Sidebar({ setView, currentView }: SidebarProps) {
   const navItems = [
-    { id: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
+    { id: "analytics", icon: LayoutDashboard, label: "Dashboard" },
     { id: "input", icon: ArrowRightToLine, label: "Input Workspace" },
     { id: "history", icon: Clock, label: "History" },
     { id: "prd", icon: BookOpen, label: "BRD Generator" },
