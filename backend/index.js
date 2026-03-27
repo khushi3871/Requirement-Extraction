@@ -80,14 +80,15 @@ app.post('/api/jira-sync', async (req, res) => {
             if (cleanSummary.length > 250) cleanSummary = cleanSummary.substring(0, 247) + "...";
 
             const jiraIssue = {
-                fields: {
-                    project: { key: projectKey || 'KAN' },
-                    summary: cleanSummary, 
-                    description: reqText, 
-                    issuetype: { name: 'Task' }
-                }
-            };
-
+    fields: {
+        project: { key: projectKey || 'KAN' },
+        summary: cleanSummary,
+        description: reqText,
+        issuetype: { name: 'Task' },
+        // Use accountId for precise assignment
+        assignee: { id: process.env.JIRA_ACCOUNT_ID } 
+    }
+};
             const response = await axios.post(
                 `https://${domain}/rest/api/2/issue`,
                 jiraIssue,
