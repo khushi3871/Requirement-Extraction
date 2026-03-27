@@ -1,36 +1,76 @@
 import { useEffect, useState } from "react";
 import { useParams, useLocation } from "react-router-dom";
 import { useAuth } from "@clerk/clerk-react";
-import { Clock, FileText, ChevronRight, Folder, Calendar, Loader2 } from "lucide-react";
+import { Clock, FileText, ChevronRight, Folder, Calendar, Loader2, Trash2 } from "lucide-react";
 
 interface HistoryItem {
   _id: string;
   fileName?: string;
+  raw_text?: string; // Added for dynamic titles
   createdAt: string;
   predicted_category: string;
   analysis_details: any;
 }
 
+// Helper function to create YouTube-style date labels
+const getRelativeDateLabel = (dateString: string) => {
+  const date = new Date(dateString);
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+
+  if (date.toDateString() === today.toDateString()) return "Today";
+  if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+
+  return date.toLocaleDateString(undefined, {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric'
+  });
+};
+
 export default function HistoryPage({ onViewItem }: { onViewItem: (item: any) => void }) {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   const { projectId } = useParams();
   const { userId } = useAuth();
-  
+
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const projectName = queryParams.get("name") || "Project Workspace";
+
+  // --- DELETE FUNCTION ---
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation(); // Prevents the "Open Report" click from firing
+    
+    if (!window.confirm("Are you sure you want to delete this extraction?")) return;
+
+    try {
+      const response = await fetch(`http://127.0.0.1:5000/api/history/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // Remove the item from local state instantly
+        setHistory(prev => prev.filter(item => item._id !== id));
+      } else {
+        alert("Failed to delete the item.");
+      }
+    } catch (error) {
+      console.error("Failed to delete item:", error);
+    }
+  };
 
   useEffect(() => {
     const fetchHistory = async () => {
       if (!projectId || !userId) return;
 
       try {
-        // Updated to 127.0.0.1 to prevent connection issues
         const response = await fetch(`http://127.0.0.1:5000/api/history/${projectId}/${userId}`);
         const data = await response.json();
-        
+
         if (Array.isArray(data)) {
           setHistory(data);
         }
@@ -58,10 +98,10 @@ export default function HistoryPage({ onViewItem }: { onViewItem: (item: any) =>
   return (
     <div className="p-8 max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Header Section */}
-      <div className="mb-8">
+      <div className="mb-12">
         <div className="flex items-center gap-2 text-[#4729e0] mb-1">
           <Folder size={16} />
-          <span className="text-xs font-bold uppercase tracking-widest">Project History</span>
+          <span className="text-xs font-bold uppercase tracking-widest">Project Activity</span>
         </div>
         <h2 className="text-4xl font-black text-white tracking-tight">
           {projectName}
@@ -77,40 +117,65 @@ export default function HistoryPage({ onViewItem }: { onViewItem: (item: any) =>
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4">
-          {history.map((item) => (
-            <div 
-              key={item._id}
-              onClick={() => onViewItem(item)}
-              className="group flex items-center justify-between p-5 rounded-2xl border border-slate-800 bg-slate-900/40 hover:border-[#4729e0]/50 hover:bg-[#4729e0]/5 transition-all cursor-pointer transform hover:-translate-y-1"
-            >
-              <div className="flex items-center gap-5">
-                <div className="size-14 rounded-xl bg-[#4729e0]/10 flex items-center justify-center text-[#4729e0] group-hover:bg-[#4729e0] group-hover:text-white transition-all shadow-lg">
-                  <FileText size={28} />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-slate-100 group-hover:text-white transition-colors">
-                    {item.fileName || "Requirement Extraction"}
-                  </h3>
-                  <div className="flex items-center gap-3 text-sm text-slate-500 mt-1">
-                    <span className="bg-slate-800 text-[#4729e0] px-2.5 py-0.5 rounded-md text-xs font-bold uppercase tracking-wider">
-                      {item.predicted_category}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Calendar size={14} />
-                      {new Date(item.createdAt).toLocaleDateString(undefined, { 
-                        month: 'short', 
-                        day: 'numeric', 
-                        year: 'numeric' 
-                      })}
-                    </span>
-                  </div>
-                </div>
-              </div>
+        <div className="flex flex-col gap-10">
+          {Object.entries(
+            history.reduce((groups: Record<string, HistoryItem[]>, item) => {
+              const label = getRelativeDateLabel(item.createdAt);
+              if (!groups[label]) groups[label] = [];
+              groups[label].push(item);
+              return groups;
+            }, {})
+          ).map(([dateLabel, items]) => (
+            <div key={dateLabel} className="animate-in fade-in slide-in-from-left-4 duration-700">
+              {/* YouTube Style Date Header */}
+              <h3 className="text-slate-500 text-sm font-bold uppercase tracking-widest mb-5 flex items-center gap-2">
+                <Calendar size={14} className="text-[#4729e0]" />
+                {dateLabel}
+              </h3>
 
-              <div className="flex items-center gap-2 text-[#4729e0] opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
-                <span className="text-sm font-bold">Open Report</span>
-                <ChevronRight size={20} />
+              <div className="grid grid-cols-1 gap-4">
+                {items.map((item) => (
+                  <div
+                    key={item._id}
+                    onClick={() => onViewItem(item)}
+                    className="group flex items-center justify-between p-5 rounded-2xl border border-slate-800/60 bg-slate-900/40 hover:border-[#4729e0]/50 hover:bg-[#4729e0]/5 transition-all cursor-pointer transform hover:-translate-y-1"
+                  >
+                    <div className="flex items-center gap-5">
+                      <div className="size-14 rounded-xl bg-[#4729e0]/10 flex items-center justify-center text-[#4729e0] group-hover:bg-[#4729e0] group-hover:text-white transition-all shadow-lg">
+                        <FileText size={28} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg font-bold text-slate-100 group-hover:text-white transition-colors truncate">
+                          {item.fileName || (item.raw_text ? item.raw_text.split('\n')[0].substring(0, 50) : "Requirement Extraction")}
+                        </h3>
+                        <div className="flex items-center gap-3 text-sm text-slate-500 mt-1">
+                          <span className="bg-slate-800 text-[#4729e0] px-2.5 py-0.5 rounded-md text-xs font-bold uppercase tracking-wider">
+                            {item.predicted_category}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock size={14} />
+                            {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      {/* Delete Button */}
+                      <button
+                        onClick={(e) => handleDelete(e, item._id)}
+                        className="p-2 rounded-lg text-slate-500 hover:bg-red-500/10 hover:text-red-500 transition-all md:opacity-0 group-hover:opacity-100"
+                      >
+                        <Trash2 size={20} />
+                      </button>
+
+                      <div className="flex items-center gap-2 text-[#4729e0] opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0 hidden md:flex">
+                        <span className="text-sm font-bold">Open</span>
+                        <ChevronRight size={20} />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           ))}
