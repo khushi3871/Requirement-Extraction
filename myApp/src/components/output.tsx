@@ -75,9 +75,7 @@ export default function RequirementsPanel({
     );
   }
 
-  // --- FIXED: Define these variables at the top level of the component scope ---
-  const finalProjectId =
-    projectId || data.project_id || data.metadata?.project_id || "Export";
+  const finalProjectId = projectId || data.project_id || data.metadata?.project_id || "Export";
   const finalUserId = userId || data.userId || data.metadata?.userId;
   const { analysis_details, predicted_category } = data;
 
@@ -95,61 +93,46 @@ export default function RequirementsPanel({
     return analysis_details[backendKey] || [];
   };
 
-  // --- Jira Sync Logic ---
   const handleJiraSync = async () => {
     const requirementsToSync = getList("Functional Requirements");
     if (requirementsToSync.length === 0) {
       alert("No functional requirements found to sync!");
       return;
     }
-
     setIsSyncing(true);
     setSyncSuccess(false);
-
     try {
       const response = await fetch("http://127.0.0.1:5000/api/jira-sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           requirements: requirementsToSync,
-          projectKey: finalProjectId !== "Export" ? finalProjectId : "KAN",
+          projectKey: "KAN", 
         }),
       });
-
       const result = await response.json();
-
       if (response.ok) {
         setSyncSuccess(true);
         setTimeout(() => setSyncSuccess(false), 4000);
       } else {
-        alert(
-          `Jira Error: ${result.error || "Sync failed. Check permissions."}`,
-        );
+        alert(`Jira Sync Failed: ${result.error || "Check Project Key."}`);
       }
     } catch (error) {
-      alert("Could not reach the backend server.");
+      alert("Could not reach backend.");
     } finally {
       setIsSyncing(false);
     }
   };
 
-  // --- MongoDB Save Logic ---
   const handleSave = async () => {
     setIsSaving(true);
     try {
       const response = await fetch("http://127.0.0.1:5000/api/save-analysis", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...data,
-          project_id: finalProjectId,
-          userId: finalUserId,
-        }),
+        body: JSON.stringify({ ...data, project_id: finalProjectId, userId: finalUserId }),
       });
-
-      if (response.ok) {
-        setIsSaved(true);
-      }
+      if (response.ok) setIsSaved(true);
     } catch (error) {
       console.error("Save Error:", error);
     } finally {
@@ -157,7 +140,6 @@ export default function RequirementsPanel({
     }
   };
 
-  // --- PDF Export Logic ---
   const downloadPDF = () => {
     const doc = new jsPDF();
     doc.setFillColor(71, 41, 224);
@@ -165,14 +147,8 @@ export default function RequirementsPanel({
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(22);
     doc.text("ReqMind AI Report", 14, 25);
-
     let yPos = 55;
-    [
-      "Functional Requirements",
-      "Non Functional Requirements",
-      "Stakeholders",
-      "Timelines",
-    ].forEach((section) => {
+    ["Functional Requirements", "Non Functional Requirements", "Stakeholders", "Timelines"].forEach((section) => {
       const items = getList(section);
       if (items.length > 0) {
         doc.setFontSize(14);
@@ -195,123 +171,87 @@ export default function RequirementsPanel({
   return (
     <div className="flex h-screen bg-[#141121] text-slate-100 overflow-hidden font-sans">
       <main className="flex-1 overflow-y-auto custom-scrollbar flex flex-col relative">
-        <header className="px-8 pt-10 pb-6 shrink-0 border-b border-slate-800/50 bg-[#141121]/50 backdrop-blur-sm sticky top-0 z-10">
+        
+        <header className="px-8 pt-12 pb-6 shrink-0 border-b border-slate-800/50 bg-[#141121]">
           <div className="max-w-5xl mx-auto flex justify-between items-end">
             <div>
-              <h2 className="text-3xl font-black text-white tracking-tight mb-1">
+              <h2 className="text-4xl font-black text-white tracking-tight mb-2">
                 Requirements Review
               </h2>
               <p className="text-[#4729e0] text-sm font-bold uppercase tracking-widest flex items-center gap-2">
                 <History size={14} /> {predicted_category} workspace
               </p>
             </div>
-            <p className="text-slate-500 text-xs font-mono mb-1">
-              PROJECT: {finalProjectId}
-            </p>
+            {/* <p className="text-slate-500 text-xs font-mono mb-1">
+              PROJECT ID: {finalProjectId.substring(0, 8)}...
+            </p> */}
           </div>
         </header>
 
-        <div className="px-8 pb-40 pt-8 flex-1">
-          <div className="max-w-5xl mx-auto space-y-10">
+        <div className="px-8 pb-40 pt-10 flex-1">
+          <div className="max-w-5xl mx-auto space-y-12">
             <section>
-              <h3 className="text-lg font-bold text-white mb-5 flex items-center gap-2">
-                <Network className="text-[#4729e0] w-5 h-5" /> Functional
-                Requirements
+              <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                <Network className="text-[#4729e0] w-6 h-6" /> Functional Requirements
               </h3>
               <div className="grid gap-4">
-                {getList("Functional Requirements").map(
-                  (req: string, i: number) => (
-                    <RequirementCard
-                      key={i}
-                      title={req}
-                      source="AI Extraction"
-                    />
-                  ),
-                )}
+                {getList("Functional Requirements").map((req: string, i: number) => (
+                  <RequirementCard key={i} title={req} source="AI Extraction" />
+                ))}
               </div>
             </section>
 
             <section>
-              <h3 className="text-lg font-bold text-white mb-5 flex items-center gap-2">
-                <Gauge className="text-[#4729e0] w-5 h-5" /> Non-Functional
-                Requirements
+              <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                <Gauge className="text-[#4729e0] w-6 h-6" /> Non-Functional Requirements
               </h3>
               <div className="grid gap-4">
-                {getList("Non Functional Requirements").map(
-                  (req: string, i: number) => (
-                    <RequirementCard
-                      key={i}
-                      title={req}
-                      source="System Metric"
-                    />
-                  ),
-                )}
+                {getList("Non Functional Requirements").map((req: string, i: number) => (
+                  <RequirementCard key={i} title={req} source="System Metric" />
+                ))}
               </div>
             </section>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <section className="bg-slate-900/40 p-7 rounded-3xl border border-slate-800/60 shadow-inner">
-                <h3 className="text-white font-bold mb-5 flex items-center gap-2">
+              <section className="bg-slate-900/40 p-8 rounded-3xl border border-slate-800/60 shadow-inner">
+                <h3 className="text-white font-bold mb-6 flex items-center gap-2">
                   <Share2 className="text-orange-400 w-5 h-5" /> Stakeholders
                 </h3>
-                <div className="flex flex-wrap gap-2.5">
+                <div className="flex flex-wrap gap-3">
                   {getList("Stakeholders").length > 0 ? (
                     getList("Stakeholders").map((s: string, i: number) => (
-                      <span
-                        key={i}
-                        className="px-3.5 py-1.5 bg-[#4729e0]/10 border border-[#4729e0]/30 rounded-xl text-xs font-bold text-[#8b75ff]"
-                      >
+                      <span key={i} className="px-4 py-2 bg-[#4729e0]/10 border border-[#4729e0]/30 rounded-xl text-xs font-bold text-[#8b75ff]">
                         @{s}
                       </span>
                     ))
-                  ) : (
-                    <p className="text-slate-600 text-sm italic">
-                      No stakeholders identified.
-                    </p>
-                  )}
+                  ) : ( <p className="text-slate-600 text-sm italic">No stakeholders identified.</p> )}
                 </div>
               </section>
 
-              <section className="bg-slate-900/40 p-7 rounded-3xl border border-slate-800/60 shadow-inner">
-                <h3 className="text-white font-bold mb-5 flex items-center gap-2">
-                  <PlusCircle className="text-emerald-400 w-5 h-5" /> Project
-                  Timelines
+              <section className="bg-slate-900/40 p-8 rounded-3xl border border-slate-800/60 shadow-inner">
+                <h3 className="text-white font-bold mb-6 flex items-center gap-2">
+                  <PlusCircle className="text-emerald-400 w-5 h-5" /> Project Timelines
                 </h3>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {getList("Timelines").length > 0 ? (
                     getList("Timelines").map((t: string, i: number) => (
-                      <div
-                        key={i}
-                        className="text-sm text-slate-300 flex items-center gap-3"
-                      >
-                        <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981]" />{" "}
-                        {t}
+                      <div key={i} className="text-sm text-slate-300 flex items-center gap-3">
+                        <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981]" /> {t}
                       </div>
                     ))
-                  ) : (
-                    <p className="text-slate-600 text-sm italic">
-                      No dates mentioned.
-                    </p>
-                  )}
+                  ) : ( <p className="text-slate-600 text-sm italic">No dates mentioned.</p> )}
                 </div>
               </section>
             </div>
 
-            <section>
-              <h3 className="text-white font-bold mb-5 flex items-center gap-2">
-                <Check className="text-purple-400 w-5 h-5" /> Key Extract
-                Decisions
+            <section className="pb-10">
+              <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                <Check className="text-purple-400 w-6 h-6" /> Key Extract Decisions
               </h3>
               <div className="grid gap-4">
                 {getList("Decisions").map((d: string, i: number) => (
-                  <div
-                    key={i}
-                    className="p-5 bg-[#1c1a2e] border border-slate-800 rounded-2xl text-sm text-slate-300 flex items-start gap-3"
-                  >
-                    <ChevronRight
-                      size={16}
-                      className="text-purple-400 mt-0.5 shrink-0"
-                    />
+                  <div key={i} className="p-6 bg-[#1c1a2e] border border-slate-800 rounded-2xl text-sm text-slate-300 flex items-start gap-4">
+                    <ChevronRight size={18} className="text-purple-400 mt-0.5 shrink-0" />
                     {d}
                   </div>
                 ))}
@@ -326,8 +266,7 @@ export default function RequirementsPanel({
               onClick={() => window.location.reload()}
               className="flex items-center gap-2 text-slate-400 hover:text-white transition-all text-sm font-bold group"
             >
-              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />{" "}
-              Reset Session
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Reset Session
             </button>
 
             <div className="flex items-center gap-4">
@@ -341,16 +280,10 @@ export default function RequirementsPanel({
                 }`}
               >
                 {isSyncing ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" /> Syncing...
-                  </>
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Syncing...</>
                 ) : syncSuccess ? (
-                  <>
-                    <Check className="w-4 h-4" /> Jira Active
-                  </>
-                ) : (
-                  "Sync to Jira"
-                )}
+                  <><Check className="w-4 h-4" /> Jira Active</>
+                ) : ( "Sync to Jira" )}
               </button>
 
               <button

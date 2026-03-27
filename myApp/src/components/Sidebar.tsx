@@ -133,24 +133,7 @@ export default function Sidebar({ setView, currentView }: SidebarProps) {
       </div>
 
       {/* User Profile */}
-      <div className="p-4 border-t border-[#4729e0]/20">
-        <div className="flex items-center gap-3 px-2">
-          <div className="w-8 h-8 rounded-full bg-[#4729e0]/20 flex items-center justify-center">
-            <User className="text-[#4729e0] w-4 h-4" />
-          </div>
-
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold truncate text-white">
-              Shubham Mohite
-            </p>
-            <p className="text-[10px] text-slate-400 truncate">
-              Full Stack Developer
-            </p>
-          </div>
-
-          <Settings className="text-slate-400 w-4 h-4 cursor-pointer hover:text-white" />
-        </div>
-      </div>
+      
     </aside>
   );
 }

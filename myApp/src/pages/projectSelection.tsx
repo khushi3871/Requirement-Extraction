@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useUser } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
-import { FolderPlus, FolderOpen, Loader2, LayoutGrid } from "lucide-react";
+// Combined all necessary icons
+import { FolderPlus, FolderOpen, Loader2, LayoutGrid, RefreshCw } from "lucide-react";
 
 interface Project {
   _id: string;
@@ -13,29 +14,63 @@ interface Project {
 export default function ProjectSelection() {
   const { user } = useUser();
   const navigate = useNavigate();
+  
+  // State Management
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false); // For Email Sync progress
 
-  // 1. Fetch live projects from your Node.js backend
-  useEffect(() => {
-    const fetchProjects = async () => {
-      if (!user?.id) return;
-      try {
-        const response = await fetch(`http://127.0.0.1:5000/api/projects/${user.id}`);
-        const data = await response.json();
-        if (Array.isArray(data)) {
-          setProjects(data);
-        }
-      } catch (error) {
-        console.error("Error fetching projects:", error);
-      } finally {
-        setLoading(false);
+  // 1. Fetch live projects - Wrapped in useCallback to reuse in Sync logic
+  const fetchProjects = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      const response = await fetch(`http://127.0.0.1:5000/api/projects/${user.id}`);
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        setProjects(data);
       }
-    };
-    fetchProjects();
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+    } finally {
+      setLoading(false);
+    }
   }, [user?.id]);
 
-  // 2. Create a new project and save it to MongoDB
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
+
+  // 2. Global Email Sync Logic
+  const handleGlobalSync = async () => {
+    if (!user?.id) return;
+    setSyncing(true);
+
+    try {
+      const response = await fetch("http://127.0.0.1:5000/api/global-sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id }),
+      });
+
+      const data = await response.json();
+
+      if (data.status === "AUTH_REQUIRED") {
+        // Redirect to Google Login if tokens are missing or expired
+        window.location.href = data.url;
+      } else {
+        alert(data.message || "Sync completed successfully!");
+        // Refresh project list to reflect any new sync timestamps or data
+        fetchProjects();
+      }
+    } catch (error) {
+      console.error("Global Sync Error:", error);
+      alert("Failed to sync emails. Make sure the backend and Python AI are running.");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  // 3. Create Project Logic
   const handleCreateProject = async () => {
     const projectName = prompt("Enter New Project Name:");
     if (!projectName || !user?.id) return;
@@ -57,12 +92,14 @@ export default function ProjectSelection() {
         navigate(`/workplace/${newProj._id}?name=${encodeURIComponent(newProj.name)}`);
       }
     } catch (error) {
-      alert("Failed to create project. Is backend running?");
+      console.error("Create Project Error:", error);
+      alert("Failed to create project. Is the backend running?");
     }
   };
 
   return (
     <div className="min-h-screen bg-[#0f0c1d] text-white p-8 md:p-12">
+      {/* Header Section */}
       <header className="mb-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
           <div className="flex items-center gap-2 text-[#4729e0] mb-2">
@@ -70,16 +107,37 @@ export default function ProjectSelection() {
             <span className="text-xs font-bold uppercase tracking-tighter">Workspace Hub</span>
           </div>
           <h1 className="text-4xl font-black text-white">Project Selection</h1>
-          <p className="text-slate-400 mt-1">Select a workspace to continue your analysis, {user?.firstName}.</p>
+          <p className="text-slate-400 mt-1">
+            Select a workspace to continue your analysis, {user?.firstName || "User"}.
+          </p>
         </div>
-        <button 
-          onClick={handleCreateProject}
-          className="group flex items-center gap-2 bg-[#4729e0] px-6 py-4 rounded-2xl font-bold shadow-xl shadow-[#4729e0]/20 hover:scale-105 transition-all"
-        >
-          <FolderPlus size={20} /> Create New Project
-        </button>
+
+        <div className="flex flex-wrap gap-4">
+          {/* Email Sync Button */}
+          <button 
+            onClick={handleGlobalSync}
+            disabled={syncing}
+            className={`flex items-center gap-2 px-6 py-4 rounded-2xl font-bold transition-all border ${
+              syncing 
+              ? "bg-slate-800 border-slate-700 text-slate-500 cursor-not-allowed" 
+              : "bg-slate-900 border-slate-800 text-white hover:border-[#4729e0] hover:bg-[#4729e0]/10"
+            }`}
+          >
+            {syncing ? <Loader2 size={20} className="animate-spin" /> : <RefreshCw size={20} />}
+            {syncing ? "Analyzing Inbox..." : "Email Sync"}
+          </button>
+
+          {/* Create Project Button */}
+          <button 
+            onClick={handleCreateProject}
+            className="group flex items-center gap-2 bg-[#4729e0] px-6 py-4 rounded-2xl font-bold shadow-xl shadow-[#4729e0]/20 hover:scale-105 transition-all"
+          >
+            <FolderPlus size={20} /> Create New Project
+          </button>
+        </div>
       </header>
 
+      {/* Main Content Area */}
       {loading ? (
         <div className="flex h-64 flex-col items-center justify-center text-slate-500">
           <Loader2 className="animate-spin mb-4 text-[#4729e0]" size={40} />

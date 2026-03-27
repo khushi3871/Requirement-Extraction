@@ -117,7 +117,7 @@ export default function Workspace() {
 
         {(() => {
           switch (currentView) {
-            case "analytics":
+            case "dashboard":
               return <AnalyticsDashboard projectList={projects} />;
 
             case "history":
@@ -126,12 +126,7 @@ export default function Workspace() {
             case "results":
               return analysisData ? (
                 <div className="p-6 max-w-6xl mx-auto">
-                  <button
-                    onClick={() => setCurrentView("input")}
-                    className="px-4 py-2 bg-[#4729e0]/10 text-[#4729e0] border border-[#4729e0]/20 hover:bg-[#4729e0]/20 rounded-lg text-sm font-bold mb-6 transition-all"
-                  >
-                    ← Back to Input
-                  </button>
+                  
                   <RequirementsPanel data={analysisData} />
                 </div>
               ) : (

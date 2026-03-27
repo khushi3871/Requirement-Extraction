@@ -5,3 +5,5 @@ combined_dataset.csv
 __pycache__/
 
 backend/.env
+backend/node_modules
+/node_modules
