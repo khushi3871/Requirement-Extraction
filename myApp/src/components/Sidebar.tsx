@@ -10,7 +10,10 @@
     BookOpen,
     User,
     Settings,
+    Share2,
   } from "lucide-react";
+
+  import { useEffect, useState } from "react";
 
   interface SidebarProps {
     setView: (view: string) => void;
@@ -27,7 +30,41 @@
       { id: "stakeholders", icon: Users, label: "Stakeholders" },
       { id: "graph", icon: Network, label: "Knowledge Graph" },
     ];
+    const [isJiraLinked, setIsJiraLinked] = useState(false);
 
+    useEffect(() => {
+    // 1. Check if we just arrived from the successful OAuth redirect
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("jira") === "connected") {
+      localStorage.setItem("jira_status", "linked");
+      setIsJiraLinked(true);
+      
+      // 2. Clean up the URL bar so the "?jira=connected" goes away (looks professional)
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else {
+      // 3. Check if it was already linked in a previous session
+      const savedStatus = localStorage.getItem("jira_status");
+      if (savedStatus === "linked") {
+        setIsJiraLinked(true);
+      }
+    }
+  }, []);
+    
+    const connectJira = () => {
+    // REPLACE THIS WITH YOUR ACTUAL CLIENT ID
+    const clientId = import.meta.env.VITE_JIRA_CLIENT_ID;
+    if (!clientId) {
+      console.error("Jira Client ID is missing in .env");
+      alert("Configuration Error: Check console.");
+      return;
+    }
+    const redirectUri = encodeURIComponent("http://localhost:5000/api/auth/jira/callback");
+    const scope = encodeURIComponent("offline_access read:jira-work write:jira-work read:jira-user");
+    
+    const authUrl = `https://auth.atlassian.com/authorize?audience=api.atlassian.com&client_id=${clientId}&scope=${scope}&redirect_uri=${redirectUri}&state=hackathon&response_type=code&prompt=consent`;
+
+    window.location.href = authUrl;
+  };
     return (
       <aside className="w-64 flex-shrink-0 border-r border-[#4729e0]/20 bg-[#141121] flex flex-col h-full">
         <div className="p-6">
@@ -57,6 +94,33 @@
             );
           })}
         </nav>
+
+        {/* Find this section in your Sidebar.tsx return statement */}
+<div className="px-4 py-4 mt-auto">
+  {isJiraLinked ? (
+    // --- SHOW THIS IF JIRA IS CONNECTED ---
+    <div className="w-full flex flex-col gap-2 p-3 bg-green-500/10 border border-green-500/20 rounded-xl">
+      <div className="flex items-center gap-2">
+        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+        <span className="text-[10px] font-bold text-green-400 uppercase tracking-widest">
+          Jira Workspace Active
+        </span>
+      </div>
+      <p className="text-[10px] text-slate-400 italic">
+        Syncing to: {import.meta.env.VITE_JIRA_PROJECT_KEY || 'KAN'}
+      </p>
+    </div>
+  ) : (
+    // --- SHOW THIS IF JIRA IS NOT CONNECTED ---
+    <button 
+      onClick={connectJira}
+      className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-blue-600/10 border border-blue-500/50 rounded-xl text-blue-400 hover:bg-blue-600 hover:text-white transition-all group shadow-lg shadow-blue-900/20"
+    >
+      <Share2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
+      <span className="text-xs font-bold uppercase tracking-wider">Connect Jira</span>
+    </button>
+  )}
+</div>
 
         <div className="p-4 border-t border-[#4729e0]/20">
           <div className="flex items-center gap-3 px-2">
