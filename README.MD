@@ -19,6 +19,24 @@ ReqSphere is an intelligent agent designed to extract structured business insigh
 - **Macro F1-Score:** 0.95 (Handling imbalanced business classes)
 
 ## 🏃 How to Run
+
+## 📦 Installation & Setup
+
+1. **Clone the repo**
+   ```bash
+   git clone [https://github.com/Shubham-Mohite/ReqMind-AI.git](https://github.com/Shubham-Mohite/ReqMind-AI.git)
+Setup Backend
+
+Bash
+cd backend && npm install
+# Add your .env (Jira Client ID, MongoDB URI, Clerk Keys)
+node index.js
+Setup Frontend
+
+Bash
+cd myApp && npm install
+npm run dev
+4] Setup AI Server
 1. Install dependencies: `pip install fastapi uvicorn spacy scikit-learn joblib pandas`
 2. Download spaCy model: `python -m spacy download en_core_web_sm`
 3. Start the API: `python main_api.py`
