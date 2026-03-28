@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom"; // Assuming React Router
+import { Link } from "react-router-dom"; 
 
 interface SidebarProps {
   setView: (view: string) => void;
@@ -17,11 +17,12 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ setView, currentView }: SidebarProps) {
+  // --- UPDATED SEQUENCE ---
   const navItems = [
-    { id: "input", icon: ArrowRightToLine, label: "Input Workspace" },
-    { id: "prd", icon: BookOpen, label: "BRD Generator" },
-    { id: "graph", icon: Network, label: "Knowledge Graph" },
     { id: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
+    { id: "input", icon: ArrowRightToLine, label: "Input Workspace" },
+    { id: "graph", icon: Network, label: "Knowledge Graph" },
+    { id: "prd", icon: BookOpen, label: "BRD Generator" },
     { id: "history", icon: Clock, label: "History" },
   ];
 
