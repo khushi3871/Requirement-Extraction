@@ -1,18 +1,26 @@
 import { useEffect, useState } from "react";
-import { useParams, useLocation } from "react-router-dom";
+import { useParams, useLocation, useNavigate } from "react-router-dom"; // Added useNavigate
 import { useAuth } from "@clerk/clerk-react";
-import { Clock, FileText, ChevronRight, Folder, Calendar, Loader2, Trash2 } from "lucide-react";
+import { 
+  Clock, 
+  FileText, 
+  ChevronRight, 
+  Folder, 
+  Calendar, 
+  Loader2, 
+  Trash2, 
+  LayoutGrid // Added for the My Projects icon
+} from "lucide-react";
 
 interface HistoryItem {
   _id: string;
   fileName?: string;
-  raw_text?: string; // Added for dynamic titles
+  raw_text?: string;
   createdAt: string;
   predicted_category: string;
   analysis_details: any;
 }
 
-// Helper function to create YouTube-style date labels
 const getRelativeDateLabel = (dateString: string) => {
   const date = new Date(dateString);
   const today = new Date();
@@ -31,6 +39,7 @@ const getRelativeDateLabel = (dateString: string) => {
 };
 
 export default function HistoryPage({ onViewItem }: { onViewItem: (item: any) => void }) {
+  const navigate = useNavigate(); // Hook for navigation
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -41,9 +50,8 @@ export default function HistoryPage({ onViewItem }: { onViewItem: (item: any) =>
   const queryParams = new URLSearchParams(location.search);
   const projectName = queryParams.get("name") || "Project Workspace";
 
-  // --- DELETE FUNCTION ---
   const handleDelete = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation(); // Prevents the "Open Report" click from firing
+    e.stopPropagation(); 
     
     if (!window.confirm("Are you sure you want to delete this extraction?")) return;
 
@@ -53,7 +61,6 @@ export default function HistoryPage({ onViewItem }: { onViewItem: (item: any) =>
       });
 
       if (response.ok) {
-        // Remove the item from local state instantly
         setHistory(prev => prev.filter(item => item._id !== id));
       } else {
         alert("Failed to delete the item.");
@@ -97,15 +104,26 @@ export default function HistoryPage({ onViewItem }: { onViewItem: (item: any) =>
 
   return (
     <div className="p-8 max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Header Section */}
-      <div className="mb-12">
-        <div className="flex items-center gap-2 text-[#4729e0] mb-1">
-          <Folder size={16} />
-          <span className="text-xs font-bold uppercase tracking-widest">Project Activity</span>
+      {/* Header Section with My Projects Button */}
+      <div className="mb-12 flex justify-between items-start">
+        <div>
+          <div className="flex items-center gap-2 text-[#4729e0] mb-1">
+            <Folder size={16} />
+            <span className="text-xs font-bold uppercase tracking-widest">Project Activity</span>
+          </div>
+          <h2 className="text-4xl font-black text-white tracking-tight">
+            {projectName}
+          </h2>
         </div>
-        <h2 className="text-4xl font-black text-white tracking-tight">
-          {projectName}
-        </h2>
+
+        {/* --- MY PROJECTS REDIRECT BUTTON --- */}
+        <button 
+          onClick={() => navigate('/select-project')}
+          className="flex items-center gap-2 px-5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-xs font-black uppercase tracking-widest text-white hover:bg-[#4729e0] hover:border-[#4729e0] transition-all shadow-lg shadow-black/20 group"
+        >
+          <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform duration-300" />
+          My Projects
+        </button>
       </div>
 
       {history.length === 0 ? (
@@ -127,7 +145,6 @@ export default function HistoryPage({ onViewItem }: { onViewItem: (item: any) =>
             }, {})
           ).map(([dateLabel, items]) => (
             <div key={dateLabel} className="animate-in fade-in slide-in-from-left-4 duration-700">
-              {/* YouTube Style Date Header */}
               <h3 className="text-slate-500 text-sm font-bold uppercase tracking-widest mb-5 flex items-center gap-2">
                 <Calendar size={14} className="text-[#4729e0]" />
                 {dateLabel}
@@ -161,7 +178,6 @@ export default function HistoryPage({ onViewItem }: { onViewItem: (item: any) =>
                     </div>
 
                     <div className="flex items-center gap-4">
-                      {/* Delete Button */}
                       <button
                         onClick={(e) => handleDelete(e, item._id)}
                         className="p-2 rounded-lg text-slate-500 hover:bg-red-500/10 hover:text-red-500 transition-all md:opacity-0 group-hover:opacity-100"

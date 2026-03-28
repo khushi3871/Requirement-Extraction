@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from "react-router-dom";
 import {
   Mail,
   MessageSquare,
@@ -13,7 +14,8 @@ import {
   ListChecks,
   FileText,
   Loader2,
-  X
+  X,
+  LayoutGrid
 } from "lucide-react";
 
 const SourceTypeCard = ({
@@ -44,8 +46,9 @@ const SourceTypeCard = ({
             selected ? 'text-[#4729e0]' : 'text-slate-500 group-hover:text-[#4729e0]'
           }`}
         />
-        <span className="font-bold text-sm text-white">{title}</span>
-        <span className="text-[10px] text-slate-400">{subtitle}</span>
+        {/* Consistently Bold & Uppercase */}
+        <span className="font-black text-[10px] uppercase tracking-widest text-white">{title}</span>
+        <span className="text-[9px] font-bold uppercase tracking-tighter text-slate-500">{subtitle}</span>
       </div>
     </label>
   );
@@ -72,8 +75,8 @@ const PipelineStep = ({
         <Icon className={`w-6 h-6 text-[#4729e0]`} />
       </div>
       <span
-        className={`text-[10px] font-bold uppercase tracking-tight ${
-          isLast ? 'text-[#4729e0]' : 'text-slate-400'
+        className={`text-[9px] font-black uppercase tracking-[0.2em] ${
+          isLast ? 'text-[#4729e0]' : 'text-slate-500'
         }`}
       >
         {label}
@@ -83,6 +86,7 @@ const PipelineStep = ({
 };
 
 export default function InputPage({ onExtract }: { onExtract: (text: string, type: string) => void }) {
+  const navigate = useNavigate();
   const [sourceType, setSourceType] = useState('email');
   const [activeTab, setActiveTab] = useState('paste');
   const [text, setText] = useState('');
@@ -101,9 +105,8 @@ export default function InputPage({ onExtract }: { onExtract: (text: string, typ
     const reader = new FileReader();
     reader.onload = (e) => {
       const content = e.target?.result as string;
-      setText(content); // Store content
-      setUploadedFileName(file.name); // Store filename
-      // NOTE: Removed setActiveTab('paste') so we stay on the upload view
+      setText(content);
+      setUploadedFileName(file.name);
     };
     reader.readAsText(file);
   };
@@ -142,13 +145,23 @@ export default function InputPage({ onExtract }: { onExtract: (text: string, typ
     <div className="flex h-screen overflow-hidden bg-[#0c0a14] text-slate-100 font-sans">
       <main className="flex-1 flex flex-col overflow-y-auto custom-scrollbar">
         <header className="p-8 pb-0">
-          <div className="max-w-5xl mx-auto w-full">
-            <h2 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
-              <Sparkles className="text-[#4729e0]" /> Intelligence Hub
-            </h2>
-            <p className="mt-2 text-slate-400 max-w-2xl text-sm font-medium uppercase tracking-wider opacity-70">
-              Transforming {sourceType} into engineering specs
-            </p>
+          <div className="max-w-5xl mx-auto w-full flex justify-between items-start">
+            <div>
+              <h2 className="text-3xl font-black text-white tracking-tight flex items-center gap-3 uppercase">
+                <Sparkles className="text-[#4729e0]" /> ReqMind AI
+              </h2>
+              <p className="mt-2 text-slate-500 max-w-2xl text-[10px] font-black uppercase tracking-[0.3em] opacity-70">
+                Decoding {sourceType} into engineering specs
+              </p>
+            </div>
+            
+            <button 
+              onClick={() => navigate('/select-project')}
+              className="flex items-center gap-2 px-5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-[#4729e0] hover:border-[#4729e0] transition-all shadow-lg group"
+            >
+              <LayoutGrid size={14} className="group-hover:rotate-90 transition-transform duration-300" />
+              My Projects
+            </button>
           </div>
         </header>
 
@@ -165,18 +178,18 @@ export default function InputPage({ onExtract }: { onExtract: (text: string, typ
           <section className="relative">
             <div className="bg-[#141121] rounded-2xl border border-[#4729e0]/20 overflow-hidden shadow-2xl transition-all duration-500">
               <div className="px-6 py-3 bg-slate-900/50 flex items-center justify-between border-b border-[#4729e0]/10">
-                <div className="flex items-center gap-4 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
+                <div className="flex items-center gap-4 text-[9px] font-black uppercase tracking-[0.3em] text-slate-500">
                    {sourceType === 'email' && <span className="flex items-center gap-1"><Mail size={12}/> New Message</span>}
-                   {sourceType === 'chat' && <span className="flex items-center gap-1 text-blue-400"><MessageSquare size={12}/> Channel: #requirements</span>}
-                   {sourceType === 'transcript' && <span className="flex items-center gap-1 text-red-500 animate-pulse"><Mic size={12}/> Recording_01.mp4</span>}
-                   {sourceType === 'document' && <span className="flex items-center gap-1"><FileText size={12}/> internal_specs.txt</span>}
+                   {sourceType === 'chat' && <span className="flex items-center gap-1 text-blue-400"><MessageSquare size={12}/> #requirements</span>}
+                   {sourceType === 'transcript' && <span className="flex items-center gap-1 text-red-500 animate-pulse"><Mic size={12}/> Recording_Live</span>}
+                   {sourceType === 'document' && <span className="flex items-center gap-1"><FileText size={12}/> Source_Spec.txt</span>}
                 </div>
               </div>
 
               <div className="flex border-b border-[#4729e0]/10 bg-slate-900/20">
                 <button
                   onClick={() => setActiveTab('paste')}
-                  className={`flex-1 py-3 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${
+                  className={`flex-1 py-3 text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 transition-all ${
                     activeTab === 'paste' ? 'text-[#4729e0] bg-[#4729e0]/5' : 'text-slate-500 hover:text-slate-300'
                   }`}
                 >
@@ -184,7 +197,7 @@ export default function InputPage({ onExtract }: { onExtract: (text: string, typ
                 </button>
                 <button
                   onClick={() => setActiveTab('upload')}
-                  className={`flex-1 py-3 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${
+                  className={`flex-1 py-3 text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 transition-all ${
                     activeTab === 'upload' ? 'text-[#4729e0] bg-[#4729e0]/5' : 'text-slate-500 hover:text-slate-300'
                   }`}
                 >
@@ -207,17 +220,16 @@ export default function InputPage({ onExtract }: { onExtract: (text: string, typ
                         <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 mb-4">
                           <FileText className="w-12 h-12 text-emerald-500" />
                         </div>
-                        <p className="font-bold text-white text-lg">{uploadedFileName}</p>
-                        <p className="text-emerald-500 text-[10px] uppercase font-black tracking-widest mt-2">File Ready for Extraction</p>
-                        
+                        <p className="font-black text-white text-sm uppercase tracking-widest">{uploadedFileName}</p>
+                        <p className="text-emerald-500 text-[9px] font-black uppercase tracking-[0.3em] mt-2">Ready for Extraction</p>
                       </div>
                     ) : (
                       <>
                         <div className="p-4 rounded-full bg-[#4729e0]/10 group-hover:scale-110 transition-transform">
                           <Upload className="w-10 h-10 text-[#4729e0]" />
                         </div>
-                        <p className="font-bold text-white mt-4">Drop your {sourceType} file</p>
-                        <p className="text-slate-500 text-[10px] uppercase font-black tracking-tighter mt-1">Accepts .txt format</p>
+                        <p className="font-black text-white text-[10px] uppercase tracking-[0.2em] mt-4">Drop requirement file</p>
+                        <p className="text-slate-600 text-[8px] uppercase font-black tracking-widest mt-1">.TXT format only</p>
                       </>
                     )}
                     <input type="file" accept=".txt" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
@@ -238,19 +250,20 @@ export default function InputPage({ onExtract }: { onExtract: (text: string, typ
               {isExtracting ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
-                <Zap className="w-5 h-5 fill-current" />
+                <Zap className="w-5 h-5 fill-current text-white" />
               )}
-              <span className="uppercase tracking-[0.2em] text-xs">
-                {isExtracting ? 'Analyzing...' : `Extract from ${sourceType}`}
+              {/* FIXED FONT STYLE HERE */}
+              <span className="uppercase tracking-[0.3em] text-[11px] font-black">
+                {isExtracting ? 'Analyzing...' : `Extract Requirements`}
               </span>
             </button>
           </div>
 
           <section className="mt-12 pt-8 border-t border-slate-800/50">
             <div className="flex flex-col md:flex-row items-center justify-between gap-6 max-w-4xl mx-auto opacity-60">
-              <PipelineStep icon={FileText} label="Input" />
+              <PipelineStep icon={FileText} label="Ingestion" />
               <div className="h-px w-8 bg-slate-800 hidden md:block" />
-              <PipelineStep icon={GitBranch} label="spaCy v3" />
+              <PipelineStep icon={GitBranch} label="spaCy Model" />
               <div className="h-px w-8 bg-slate-800 hidden md:block" />
               <PipelineStep icon={Filter} label="NER Engine" />
               <div className="h-px w-8 bg-slate-800 hidden md:block" />
