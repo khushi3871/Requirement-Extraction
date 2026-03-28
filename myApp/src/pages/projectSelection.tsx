@@ -40,6 +40,21 @@ export default function ProjectSelection() {
     fetchProjects();
   }, [fetchProjects]);
 
+  // Inside ProjectSelection.tsx
+
+useEffect(() => {
+  // Check if we just returned from a successful Google Auth
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("auth") === "success") {
+    // Optionally show a toast or alert
+    console.log("✅ Google Account Linked Successfully!");
+    // Trigger an initial sync now that we have tokens
+    handleGlobalSync();
+    
+    // Clean up the URL so the alert doesn't pop up again on refresh
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+}, []);
   // 2. Global Email Sync Logic
   const handleGlobalSync = async () => {
     if (!user?.id) return;

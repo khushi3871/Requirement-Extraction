@@ -2,16 +2,14 @@ import {
   Brain,
   LayoutDashboard,
   ArrowRightToLine,
-  Users,
   Clock,
   Network,
   BookOpen,
-  User,
-  Settings,
   Share2,
 } from "lucide-react";
 
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom"; // Assuming React Router
 
 interface SidebarProps {
   setView: (view: string) => void;
@@ -35,7 +33,6 @@ export default function Sidebar({ setView, currentView }: SidebarProps) {
     if (params.get("jira") === "connected") {
       localStorage.setItem("jira_status", "linked");
       setIsJiraLinked(true);
-
       window.history.replaceState({}, document.title, window.location.pathname);
     } else {
       const savedStatus = localStorage.getItem("jira_status");
@@ -68,8 +65,11 @@ export default function Sidebar({ setView, currentView }: SidebarProps) {
 
   return (
     <aside className="w-64 flex-shrink-0 border-r border-[#4729e0]/20 bg-[#141121] flex flex-col h-full">
-      {/* Logo */}
-      <div className="p-6">
+      {/* Logo - Navigates to home path "/" */}
+      <Link 
+        to="/" 
+        className="p-6 text-left w-full block outline-none"
+      >
         <div className="flex items-center gap-2 mb-1">
           <div className="w-8 h-8 bg-[#4729e0] rounded-lg flex items-center justify-center">
             <Brain className="text-white w-5 h-5" />
@@ -81,7 +81,7 @@ export default function Sidebar({ setView, currentView }: SidebarProps) {
         <p className="text-xs text-slate-400 font-medium px-1">
           Requirement Management
         </p>
-      </div>
+      </Link>
 
       {/* Navigation */}
       <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
@@ -131,9 +131,6 @@ export default function Sidebar({ setView, currentView }: SidebarProps) {
           </button>
         )}
       </div>
-
-      {/* User Profile */}
-      
     </aside>
   );
 }

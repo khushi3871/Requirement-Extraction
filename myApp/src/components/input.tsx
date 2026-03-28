@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from "react-router-dom";
 import {
   Mail,
   MessageSquare,
@@ -13,7 +12,8 @@ import {
   Filter,
   ListChecks,
   FileText,
-  Loader2
+  Loader2,
+  X
 } from "lucide-react";
 
 const SourceTypeCard = ({
@@ -35,7 +35,7 @@ const SourceTypeCard = ({
       <div
         className={`h-full p-4 rounded-xl border-2 transition-all flex flex-col items-center text-center gap-2 ${
           selected
-            ? 'border-[#4729e0] bg-[#4729e0]/10'
+            ? 'border-[#4729e0] bg-[#4729e0]/10 shadow-[0_0_15px_rgba(71,41,224,0.1)]'
             : 'border-[#4729e0]/10 bg-[#141121] hover:border-[#4729e0]/50'
         }`}
       >
@@ -87,37 +87,29 @@ export default function InputPage({ onExtract }: { onExtract: (text: string, typ
   const [activeTab, setActiveTab] = useState('paste');
   const [text, setText] = useState('');
   const [isExtracting, setIsExtracting] = useState(false);
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
 
-  // Handle Local File Reading
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     if (file.type !== "text/plain" && !file.name.endsWith(".txt")) {
-      alert("Please upload a .txt file for the requirements analysis.");
+      alert("Please upload a .txt file.");
       return;
     }
 
     const reader = new FileReader();
-    
     reader.onload = (e) => {
       const content = e.target?.result as string;
-      
-      // Update the local state
-      setText(content); 
-
-      // Switch to paste tab so user can see what was uploaded
-      setActiveTab('paste');
-      
-      console.log(`🚀 File "${file.name}" loaded into editor. Click Extract to save.`);
+      setText(content); // Store content
+      setUploadedFileName(file.name); // Store filename
+      // NOTE: Removed setActiveTab('paste') so we stay on the upload view
     };
-
     reader.readAsText(file);
   };
 
   const handleManualExtract = async () => {
     if (!text || isExtracting) return;
-    
     setIsExtracting(true);
     try {
       await onExtract(text, sourceType);
@@ -128,126 +120,141 @@ export default function InputPage({ onExtract }: { onExtract: (text: string, typ
     }
   };
 
+  const getEditorStyles = () => {
+    switch(sourceType) {
+      case 'chat': return 'font-sans border-l-4 border-l-[#4729e0]';
+      case 'transcript': return 'font-mono text-emerald-400/90 bg-[#0d1117]';
+      case 'document': return 'font-serif text-lg leading-relaxed bg-[#f8f9fa] text-slate-900';
+      default: return 'font-sans';
+    }
+  };
+
+  const getPlaceholder = () => {
+    switch(sourceType) {
+      case 'chat': return "[User A]: Can we add a login button?\n[User B]: Yes, let's do it by Friday...";
+      case 'transcript': return "00:01 - Speaker 1: The system needs to support 10k users...\n00:45 - Speaker 2: Agreed.";
+      case 'document': return "PROJECT SPECIFICATION v1.0\nSection 1: The software shall...";
+      default: return "Paste your email content here...";
+    }
+  };
+
   return (
     <div className="flex h-screen overflow-hidden bg-[#0c0a14] text-slate-100 font-sans">
       <main className="flex-1 flex flex-col overflow-y-auto custom-scrollbar">
         <header className="p-8 pb-0">
           <div className="max-w-5xl mx-auto w-full">
-            <h2 className="text-3xl font-black text-white tracking-tight">
-              Source Input & Upload
+            <h2 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
+              <Sparkles className="text-[#4729e0]" /> Intelligence Hub
             </h2>
-            <p className="mt-2 text-slate-400 max-w-2xl">
-              Convert unstructured communications into precise engineering requirements.
+            <p className="mt-2 text-slate-400 max-w-2xl text-sm font-medium uppercase tracking-wider opacity-70">
+              Transforming {sourceType} into engineering specs
             </p>
           </div>
         </header>
 
         <div className="p-8 max-w-5xl mx-auto w-full space-y-8">
           <section>
-            <div className="flex items-center gap-2 mb-4">
-              <span className="w-6 h-6 flex items-center justify-center rounded-full bg-[#4729e0]/10 text-[#4729e0] text-xs font-bold">1</span>
-              <h3 className="text-lg font-bold text-white">Select Source Type</h3>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <SourceTypeCard icon={Mail} title="Email" subtitle="Gmail, Outlook" selected={sourceType === 'email'} onClick={() => setSourceType('email')} />
-              <SourceTypeCard icon={MessageSquare} title="Chat" subtitle="Slack, Teams" selected={sourceType === 'chat'} onClick={() => setSourceType('chat')} />
-              <SourceTypeCard icon={Mic} title="Transcript" subtitle="Zoom, Meet" selected={sourceType === 'transcript'} onClick={() => setSourceType('transcript')} />
-              <SourceTypeCard icon={FileText} title="Document" subtitle="TXT Documents" selected={sourceType === 'document'} onClick={() => setSourceType('document')} />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <SourceTypeCard icon={Mail} title="Email" subtitle="Professional" selected={sourceType === 'email'} onClick={() => setSourceType('email')} />
+              <SourceTypeCard icon={MessageSquare} title="Chat" subtitle="Slack/Teams" selected={sourceType === 'chat'} onClick={() => setSourceType('chat')} />
+              <SourceTypeCard icon={Mic} title="Transcript" subtitle="Meeting Audio" selected={sourceType === 'transcript'} onClick={() => setSourceType('transcript')} />
+              <SourceTypeCard icon={FileText} title="Document" subtitle="Raw Specs" selected={sourceType === 'document'} onClick={() => setSourceType('document')} />
             </div>
           </section>
 
-          <section>
-            <div className="flex items-center gap-2 mb-4">
-              <span className="w-6 h-6 flex items-center justify-center rounded-full bg-[#4729e0]/10 text-[#4729e0] text-xs font-bold">2</span>
-              <h3 className="text-lg font-bold text-white">Input Content</h3>
-            </div>
+          <section className="relative">
+            <div className="bg-[#141121] rounded-2xl border border-[#4729e0]/20 overflow-hidden shadow-2xl transition-all duration-500">
+              <div className="px-6 py-3 bg-slate-900/50 flex items-center justify-between border-b border-[#4729e0]/10">
+                <div className="flex items-center gap-4 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
+                   {sourceType === 'email' && <span className="flex items-center gap-1"><Mail size={12}/> New Message</span>}
+                   {sourceType === 'chat' && <span className="flex items-center gap-1 text-blue-400"><MessageSquare size={12}/> Channel: #requirements</span>}
+                   {sourceType === 'transcript' && <span className="flex items-center gap-1 text-red-500 animate-pulse"><Mic size={12}/> Recording_01.mp4</span>}
+                   {sourceType === 'document' && <span className="flex items-center gap-1"><FileText size={12}/> internal_specs.txt</span>}
+                </div>
+              </div>
 
-            <div className="bg-[#141121] rounded-xl border border-[#4729e0]/10 overflow-hidden shadow-sm">
-              <div className="flex border-b border-[#4729e0]/10">
+              <div className="flex border-b border-[#4729e0]/10 bg-slate-900/20">
                 <button
                   onClick={() => setActiveTab('paste')}
-                  className={`flex-1 py-4 text-sm font-bold border-b-2 flex items-center justify-center gap-2 transition-colors ${
-                    activeTab === 'paste' ? 'border-[#4729e0] text-[#4729e0]' : 'border-transparent text-slate-400 hover:bg-[#4729e0]/5'
+                  className={`flex-1 py-3 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${
+                    activeTab === 'paste' ? 'text-[#4729e0] bg-[#4729e0]/5' : 'text-slate-500 hover:text-slate-300'
                   }`}
                 >
-                  <ClipboardPaste className="w-[18px] h-[18px]" />
-                  Paste Text
+                  <ClipboardPaste size={14} /> Paste
                 </button>
                 <button
                   onClick={() => setActiveTab('upload')}
-                  className={`flex-1 py-4 text-sm font-bold border-b-2 flex items-center justify-center gap-2 transition-colors ${
-                    activeTab === 'upload' ? 'border-[#4729e0] text-[#4729e0]' : 'border-transparent text-slate-400 hover:bg-[#4729e0]/5'
+                  className={`flex-1 py-3 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${
+                    activeTab === 'upload' ? 'text-[#4729e0] bg-[#4729e0]/5' : 'text-slate-500 hover:text-slate-300'
                   }`}
                 >
-                  <Upload className="w-[18px] h-[18px]" />
-                  Upload File
+                  <Upload size={14} /> Upload
                 </button>
               </div>
 
-              <div className="p-6">
+              <div className="p-1">
                 {activeTab === 'paste' ? (
                   <textarea 
                     value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    className="w-full h-64 bg-[#1c192b] border border-[#4729e0]/20 rounded-lg p-4 text-sm text-slate-200 focus:ring-2 focus:ring-[#4729e0] outline-none"
-                    placeholder="Paste text here..."
+                    onChange={(e) => { setText(e.target.value); setUploadedFileName(null); }}
+                    className={`w-full h-80 bg-[#1c192b]/30 p-6 text-sm outline-none transition-all duration-300 custom-scrollbar ${getEditorStyles()}`}
+                    placeholder={getPlaceholder()}
                   ></textarea>
                 ) : (
-                  <div className="border-2 border-dashed border-[#4729e0]/30 rounded-xl p-12 flex flex-col items-center justify-center bg-[#1c192b] hover:border-[#4729e0] transition-colors cursor-pointer relative">
-                    <Upload className="w-12 h-12 text-[#4729e0] mb-4" />
-                    <p className="font-bold text-lg mb-1 text-white">Upload Requirement Document</p>
-                    <p className="text-slate-400 text-sm mb-4">Demo supports .txt files</p>
-                    
-                    <input
-                      type="file"
-                      accept=".txt"
-                      onChange={handleFileUpload}
-                      className="absolute inset-0 opacity-0 cursor-pointer"
-                    />
-                    
-                    <button className="px-6 py-2 bg-[#4729e0] rounded-lg text-sm font-bold text-white shadow-lg pointer-events-none">
-                      Select File from PC
-                    </button>
+                  <div className="h-80 border-2 border-dashed border-[#4729e0]/20 m-2 rounded-xl flex flex-col items-center justify-center bg-[#1c192b]/20 hover:border-[#4729e0]/40 transition-all cursor-pointer relative group">
+                    {uploadedFileName ? (
+                      <div className="flex flex-col items-center animate-in fade-in zoom-in duration-300">
+                        <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 mb-4">
+                          <FileText className="w-12 h-12 text-emerald-500" />
+                        </div>
+                        <p className="font-bold text-white text-lg">{uploadedFileName}</p>
+                        <p className="text-emerald-500 text-[10px] uppercase font-black tracking-widest mt-2">File Ready for Extraction</p>
+                        
+                      </div>
+                    ) : (
+                      <>
+                        <div className="p-4 rounded-full bg-[#4729e0]/10 group-hover:scale-110 transition-transform">
+                          <Upload className="w-10 h-10 text-[#4729e0]" />
+                        </div>
+                        <p className="font-bold text-white mt-4">Drop your {sourceType} file</p>
+                        <p className="text-slate-500 text-[10px] uppercase font-black tracking-tighter mt-1">Accepts .txt format</p>
+                      </>
+                    )}
+                    <input type="file" accept=".txt" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
                   </div>
                 )}
               </div>
             </div>
           </section>
 
-          <div className="flex flex-col items-center justify-center py-4">
+          <div className="flex flex-col items-center gap-4">
             <button 
               onClick={handleManualExtract}
               disabled={isExtracting || !text}
-              className={`flex items-center gap-3 px-8 py-4 bg-[#4729e0] rounded-xl font-bold text-white shadow-xl shadow-[#4729e0]/20 transition-all group ${
-                (isExtracting || !text) ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.02] active:scale-[0.98]'
+              className={`flex items-center gap-3 px-10 py-5 bg-[#4729e0] rounded-2xl font-black text-white shadow-[0_10px_30px_rgba(71,41,224,0.3)] transition-all group overflow-hidden relative ${
+                (isExtracting || !text) ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.05] active:scale-[0.95]'
               }`}
             >
               {isExtracting ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
-                <Sparkles className="w-5 h-5 fill-current" />
+                <Zap className="w-5 h-5 fill-current" />
               )}
-              {isExtracting ? 'Extracting...' : 'Extract Requirements'}
-              {!isExtracting && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
+              <span className="uppercase tracking-[0.2em] text-xs">
+                {isExtracting ? 'Analyzing...' : `Extract from ${sourceType}`}
+              </span>
             </button>
-            <p className="mt-4 text-xs text-slate-400 flex items-center gap-1">
-              <Zap className="w-[14px] h-[14px]" />
-              AI Engine Ready
-            </p>
           </div>
 
-          <section className="mt-12 pt-8 border-t border-[#4729e0]/10">
-            <h4 className="text-center text-xs font-black uppercase tracking-widest text-slate-500 mb-8">
-              Internal Extraction Pipeline
-            </h4>
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4 max-w-4xl mx-auto">
-              <PipelineStep icon={FileText} label="User Input" />
-              <ArrowRight className="w-6 h-6 text-[#4729e0]/20 hidden md:block" />
-              <PipelineStep icon={GitBranch} label="spaCy Model" />
-              <ArrowRight className="w-6 h-6 text-[#4729e0]/20 hidden md:block" />
-              <PipelineStep icon={Filter} label="Extraction" />
-              <ArrowRight className="w-6 h-6 text-[#4729e0]/20 hidden md:block" />
-              <PipelineStep icon={ListChecks} label="Structured Output" isLast={true} />
+          <section className="mt-12 pt-8 border-t border-slate-800/50">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6 max-w-4xl mx-auto opacity-60">
+              <PipelineStep icon={FileText} label="Input" />
+              <div className="h-px w-8 bg-slate-800 hidden md:block" />
+              <PipelineStep icon={GitBranch} label="spaCy v3" />
+              <div className="h-px w-8 bg-slate-800 hidden md:block" />
+              <PipelineStep icon={Filter} label="NER Engine" />
+              <div className="h-px w-8 bg-slate-800 hidden md:block" />
+              <PipelineStep icon={ListChecks} label="Structure" isLast={true} />
             </div>
           </section>
         </div>

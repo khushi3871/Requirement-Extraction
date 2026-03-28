@@ -48,11 +48,7 @@ export default function Home() {
               <span className="-mt-1 block text-xs font-normal text-slate-400">Your AI Business Analyst</span>
             </div>
           </div>
-          <nav className="hidden items-center gap-8 md:flex">
-            <a href="#" className="text-sm font-medium text-slate-300 transition-colors hover:text-primary">Features</a>
-            <a href="#" className="text-sm font-medium text-slate-300 transition-colors hover:text-primary">Solutions</a>
-            <a href="#" className="text-sm font-medium text-slate-300 transition-colors hover:text-primary">Demo</a>
-          </nav>
+          
 
           <div className="flex items-center gap-3">
             {!isSignedIn ? (

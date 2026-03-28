@@ -13,6 +13,8 @@ import {
   History,
   ChevronRight,
   Zap,
+  XCircle,
+  ExternalLink,
 } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -63,7 +65,8 @@ export default function RequirementsPanel({
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [syncSuccess, setSyncSuccess] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<"idle" | "success" | "error">("idle");
+  const [errorMessage, setErrorMessage] = useState("");
 
   // 1. Guard Clause
   if (!data || !data.analysis_details) {
@@ -79,7 +82,6 @@ export default function RequirementsPanel({
   const finalUserId = userId || data.userId || data.metadata?.userId;
   const { analysis_details, predicted_category } = data;
 
-  // 2. Helper function
   const getList = (uiTitle: string) => {
     const keyMap: { [key: string]: string } = {
       "Functional Requirements": "functional_requirements",
@@ -87,7 +89,6 @@ export default function RequirementsPanel({
       Stakeholders: "stakeholders",
       Timelines: "timelines",
       Decisions: "decisions",
-      "Feature Priority": "priority",
     };
     const backendKey = keyMap[uiTitle];
     return analysis_details[backendKey] || [];
@@ -96,11 +97,14 @@ export default function RequirementsPanel({
   const handleJiraSync = async () => {
     const requirementsToSync = getList("Functional Requirements");
     if (requirementsToSync.length === 0) {
-      alert("No functional requirements found to sync!");
+      setSyncStatus("error");
+      setErrorMessage("No functional requirements found to sync.");
       return;
     }
+
     setIsSyncing(true);
-    setSyncSuccess(false);
+    setSyncStatus("idle");
+
     try {
       const response = await fetch("http://127.0.0.1:5000/api/jira-sync", {
         method: "POST",
@@ -112,13 +116,14 @@ export default function RequirementsPanel({
       });
       const result = await response.json();
       if (response.ok) {
-        setSyncSuccess(true);
-        setTimeout(() => setSyncSuccess(false), 4000);
+        setSyncStatus("success");
       } else {
-        alert(`Jira Sync Failed: ${result.error || "Check Project Key."}`);
+        setSyncStatus("error");
+        setErrorMessage(result.error || "Check your Atlassian connection settings.");
       }
     } catch (error) {
-      alert("Could not reach backend.");
+      setSyncStatus("error");
+      setErrorMessage("Network error: Could not reach the sync server.");
     } finally {
       setIsSyncing(false);
     }
@@ -169,7 +174,70 @@ export default function RequirementsPanel({
   };
 
   return (
-    <div className="flex h-screen bg-[#141121] text-slate-100 overflow-hidden font-sans">
+    <div className="flex h-screen bg-[#141121] text-slate-100 overflow-hidden font-sans relative">
+      
+      {/* --- JIRA MODAL OVERLAY --- */}
+      {(isSyncing || syncStatus !== "idle") && (
+        <div className="absolute inset-0 z-[100] flex items-center justify-center bg-[#0a0911]/80 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-full max-w-md bg-[#1c1a2e] border border-slate-800 rounded-3xl p-8 shadow-2xl text-center space-y-6">
+            
+            {isSyncing && (
+              <div className="space-y-4">
+                <div className="relative w-20 h-20 mx-auto">
+                   <div className="absolute inset-0 rounded-full border-4 border-[#4729e0]/20" />
+                   <div className="absolute inset-0 rounded-full border-4 border-[#4729e0] border-t-transparent animate-spin" />
+                   <div className="absolute inset-0 flex items-center justify-center">
+                      <Share2 className="text-[#4729e0] w-8 h-8 animate-pulse" />
+                   </div>
+                </div>
+                <h3 className="text-2xl font-bold text-white">Syncing to Jira</h3>
+                <p className="text-slate-400 text-sm">Pushing functional requirements to project <span className="text-white font-mono">KAN</span>...</p>
+              </div>
+            )}
+
+            {syncStatus === "success" && (
+              <div className="space-y-4 animate-in zoom-in-95 duration-300">
+                <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto border border-emerald-500/50">
+                  <Check className="text-emerald-500 w-10 h-10" />
+                </div>
+                <h3 className="text-2xl font-bold text-white">Sync Successful</h3>
+                <p className="text-slate-400 text-sm">All functional items have been converted to Jira issues.</p>
+                <div className="pt-4 flex flex-col gap-2">
+                    <button 
+                        onClick={() => setSyncStatus("idle")}
+                        className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all"
+                    >
+                        Great, Thanks!
+                    </button>
+                    <a href="https://your-domain.atlassian.net" target="_blank" className="text-xs text-emerald-500 font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:underline">
+                        Open Jira Workspace <ExternalLink size={12} />
+                    </a>
+                </div>
+              </div>
+            )}
+
+            {syncStatus === "error" && (
+              <div className="space-y-4 animate-in zoom-in-95 duration-300">
+                <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto border border-red-500/50">
+                  <XCircle className="text-red-500 w-10 h-10" />
+                </div>
+                <h3 className="text-2xl font-bold text-white">Sync Failed</h3>
+                <p className="text-slate-400 text-sm">{errorMessage}</p>
+                <div className="pt-4">
+                    <button 
+                        onClick={() => setSyncStatus("idle")}
+                        className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition-all"
+                    >
+                        Try Again Later
+                    </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* --- MAIN CONTENT --- */}
       <main className="flex-1 overflow-y-auto custom-scrollbar flex flex-col relative">
         
         <header className="px-8 pt-12 pb-6 shrink-0 border-b border-slate-800/50 bg-[#141121]">
@@ -182,9 +250,6 @@ export default function RequirementsPanel({
                 <History size={14} /> {predicted_category} workspace
               </p>
             </div>
-            {/* <p className="text-slate-500 text-xs font-mono mb-1">
-              PROJECT ID: {finalProjectId.substring(0, 8)}...
-            </p> */}
           </div>
         </header>
 
@@ -272,17 +337,11 @@ export default function RequirementsPanel({
             <div className="flex items-center gap-4">
               <button
                 onClick={handleJiraSync}
-                disabled={isSyncing || syncSuccess}
-                className={`px-6 py-2.5 rounded-xl border font-black text-xs uppercase tracking-widest transition-all flex items-center gap-2 ${
-                  syncSuccess
-                    ? "border-emerald-500 text-emerald-500 bg-emerald-500/10"
-                    : "border-[#4729e0] text-[#4729e0] hover:bg-[#4729e0]/10 shadow-lg shadow-[#4729e0]/5"
-                }`}
+                disabled={isSyncing}
+                className="px-6 py-2.5 rounded-xl border border-[#4729e0] text-[#4729e0] hover:bg-[#4729e0]/10 shadow-lg shadow-[#4729e0]/5 transition-all flex items-center gap-2 font-black text-xs uppercase tracking-widest"
               >
                 {isSyncing ? (
                   <><Loader2 className="w-4 h-4 animate-spin" /> Syncing...</>
-                ) : syncSuccess ? (
-                  <><Check className="w-4 h-4" /> Jira Active</>
                 ) : ( "Sync to Jira" )}
               </button>
 
