@@ -104,9 +104,9 @@ export default function PRDView({ allData }: { allData: any[] }) {
     doc.setTextColor(textColor[0], textColor[1], textColor[2]);
     doc.setFontSize(12);
     const indexItems = [
-      "1. Key Decisions",
-      "2. Functional Requirements",
-      "3. Non-Functional Requirements",
+      "1. Functional Requirements",
+      "2. Non-Functional Requirements",
+      "3. Key Decisions",
       "4. Release Timeline",
       "5. Stakeholder Registry",
     ];
@@ -128,19 +128,19 @@ export default function PRDView({ allData }: { allData: any[] }) {
     // Ensuring the sections follow your exact requested sequence
     const sections = [
       {
-        title: "1. Key Decisions",
-        data: aggregated.decisions,
-        label: "Decision Log",
-      },
-      {
-        title: "2. Functional Requirements",
+        title: "1. Functional Requirements",
         data: aggregated.functional,
         label: "Requirement Description",
       },
       {
-        title: "3. Non-Functional Requirements",
+        title: "2. Non-Functional Requirements",
         data: aggregated.nonFunctional,
         label: "Quality Standard",
+      },
+      {
+        title: "3. Key Decisions",
+        data: aggregated.decisions,
+        label: "Decision Log",
       },
       {
         title: "4. Release Timeline",
@@ -202,16 +202,16 @@ export default function PRDView({ allData }: { allData: any[] }) {
   };
   const tabs = [
     { id: "all", label: "ALL", icon: LayoutGrid, color: "text-indigo-400" },
-    { id: "decisions", label: "DECISIONS", icon: Zap, color: "text-amber-400" },
+    { id: "functional", label: "FUNCTIONAL", icon: Zap, color: "text-amber-400" },
     {
-      id: "functional",
-      label: "FUNCTIONAL",
+      id: "nonFunctional",
+      label: "NON-FUNCTIONAL",
       icon: Target,
       color: "text-blue-400",
     },
     {
-      id: "nonFunctional",
-      label: "NON-FUNCTIONAL",
+      id: "decisions",
+      label: "DECISIONS",
       icon: ShieldCheck,
       color: "text-emerald-400",
     },
@@ -289,16 +289,8 @@ export default function PRDView({ allData }: { allData: any[] }) {
             >
               <Activity className="w-5 h-5 text-blue-500 mt-1 shrink-0" />
               <p className="text-slate-300 text-base italic leading-relaxed">
-                "As a{" "}
-                <span className="text-white font-bold">
-                  {aggregated.stakeholders[0] || "User"}
-                </span>
-                , I want to{" "}
-                <span className="text-white">
-                  {req.toLowerCase().replace(/\.$/, "")}
-                </span>
-                ."
-              </p>
+  {req}
+</p>
             </div>
           ))
         ) : (
@@ -315,7 +307,7 @@ export default function PRDView({ allData }: { allData: any[] }) {
       {showTitle && (
         <SectionHeader
           icon={ShieldCheck}
-          title="Quality Standards"
+          title="Functional Requirements"
           color="text-emerald-400"
         />
       )}
@@ -450,9 +442,10 @@ export default function PRDView({ allData }: { allData: any[] }) {
       <main className="space-y-10 mt-6 min-h-[50vh]">
         {activeTab === "all" ? (
           <>
-            {renderDecisions()}
+            
             {renderFunctional()}
             {renderNonFunctional()}
+            {renderDecisions()}
             {renderTimelines()}
             {renderStakeholders()}
           </>
